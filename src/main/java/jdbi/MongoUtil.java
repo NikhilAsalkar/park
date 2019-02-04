@@ -1,20 +1,23 @@
-package util;
+package jdbi;
 
 import bean.Car;
 import bean.ParkingSlot;
 import com.mongodb.BasicDBObject;
-import org.jongo.Find;
 import org.jongo.MongoCollection;
 import org.jongo.MongoCursor;
-import java.util.ArrayList;
+import util.AddDocuments;
+import util.ParkingFullException;
 
-public class MongoUtil implements CallMethods{
+import java.util.*;
+
+public class MongoUtil {
     ArrayList<ParkingSlot> arrayList;
     AddDocuments adddocuments = new AddDocuments();
     MongoAccess mongoAccess = new MongoAccess();
     MongoCollection client ;
     BasicDBObject newdocument = new BasicDBObject();
     String find[];
+    HashMap<String,String > hash = new HashMap<>();
 
 
     public void dataDocuments(Object connection){
@@ -35,8 +38,8 @@ public class MongoUtil implements CallMethods{
         }
     }
 
-    @Override
-    public void assignCarSlot(Car car,Object connection) {
+
+    public String assignCarSlot(Car car,Object connection) {
 
         ParkingSlot parkingSlot = mongoAccess.fetchOneDocument(connection);
 
@@ -50,10 +53,10 @@ public class MongoUtil implements CallMethods{
                     String id = parkingSlot.getId();
                     mongoAccess.update(newdocument,id);
                 }
+                return "";
     }
 
-    @Override
-    public void removeCar(Car car,Object connection) {
+    public MongoCursor removeCar(Car car, Object connection) {
 
         find=adddocuments.datatoget(car,"registernumber");
         MongoCursor<ParkingSlot> source = mongoAccess.fetchData(find,connection);
@@ -67,21 +70,27 @@ public class MongoUtil implements CallMethods{
                 mongoAccess.update(newdocument, pa.getId());
             }
         }
+        return null;
     }
 
-    @Override
-    public void getData(Car car, String finder,Object connection) {
+
+    public List<ParkingSlot> getData(Car car, String finder, Object connection) {
         find=adddocuments.datatoget(car,finder);
+        List<ParkingSlot> arrayList = new ArrayList();
         MongoCursor<ParkingSlot> source1 = mongoAccess.fetchData(find,connection);
-        if(source1 == null)
+
+       /* if(source1 == null)
             System.out.println("No record found");
         else
             for(ParkingSlot pa : source1)
                 System.out.println(pa.toString());
+        */
 
 
-
-
+       for ( ParkingSlot pa: source1) {
+           arrayList.add(pa);
+       }
+       return arrayList;
     }
 
 

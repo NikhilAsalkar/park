@@ -1,4 +1,4 @@
-package util;
+package jdbi;
 import redis.clients.jedis.*;
 import java.util.*;
 
@@ -8,7 +8,7 @@ public class RedisAccess {
     public Set getkey(String key,Object connection){
         jedis = (Jedis) connection;
         hash = jedis.keys(key);
-        System.out.println(hash);
+       // System.out.println(hash);
         return hash;
     }
 
@@ -48,7 +48,7 @@ public class RedisAccess {
     {
         jedis = (Jedis)connection;
         String data = jedis.hget(key,finder);
-        System.out.println(data);
+       // System.out.println(data);
         return data;
     }
     public void deleteKey(String key,Object connection)

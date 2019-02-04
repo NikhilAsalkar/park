@@ -1,8 +1,11 @@
-package util;
+package jdbi;
 import java.util.*;
 import bean.Car;
+import util.AddDocuments;
+import util.ParkingFullException;
+import util.PrefixRemove;
 
-public class RedisUtil implements CallMethods{
+public class RedisUtil {
     RedisAccess redisAccess = new RedisAccess();
 
         Set<String> hash;
@@ -13,8 +16,8 @@ public class RedisUtil implements CallMethods{
         String[] find;
         PrefixRemove prefixRemove = new PrefixRemove();
 
-    @Override
-    public void assignCarSlot(Car car, Object collection) {
+
+    public String assignCarSlot(Car car, Object collection) {
 
         hash = redisAccess.getZRange("emptyslots",0,0,collection);
         if(hash == null)
@@ -36,9 +39,9 @@ public class RedisUtil implements CallMethods{
             redisAccess.deleteHashField("emptyslots", id, collection);
 
         }
+        return "";
     }
 
-    @Override
     public void removeCar(Car car,Object connection) {
 
 
@@ -47,9 +50,12 @@ public class RedisUtil implements CallMethods{
 
         for(String h3 :hash) {
             String reg = redisAccess.getValue(h3,"reg_number",connection);
-            if (reg.equalsIgnoreCase(reg_number)) {
+            System.out.println(reg);
+            if (reg.equalsIgnoreCase(car.getRegistrationNumber())) {
                 id = prefixRemove.removePrefix(h3,"car:park:");
+                System.out.println(id);
                 redisAccess.addToSortedList(id,connection);
+                System.out.println(h3);
                 redisAccess.deleteKey(h3,connection);
             }
         }
@@ -73,8 +79,9 @@ public class RedisUtil implements CallMethods{
     }
 
 
-    public void getData(Car car,String finder,Object connection)
+    public ArrayList getData(Car car,String finder,Object connection)
     {
+        ArrayList arrayList = new ArrayList();
         find=adddocuments.datatoget(car,finder);
         String key = "car:park:*";
         hash= redisAccess.getkey(key,connection);
@@ -83,9 +90,9 @@ public class RedisUtil implements CallMethods{
         for (String h : hash) {
             data = redisAccess.getValue(h,find[0],connection);
             if (find[1].equalsIgnoreCase(data))
-                System.out.println(redisAccess.getValue(h,connection));
+                arrayList.add(redisAccess.getValue(h,connection));
 
         }
-
+            return arrayList;
     }
 }

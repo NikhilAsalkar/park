@@ -1,26 +1,43 @@
 
-package util;
+package resource;
 import bean.Car;
 import bean.ParkingSlot;
-import org.elasticsearch.client.transport.TransportClient;
-import org.jongo.MongoCollection;
-
+import jdbi.EsUtil;
+import jdbi.MongoUtil;
+import jdbi.RedisUtil;
+import org.jongo.MongoCursor;
+import javax.inject.Singleton;
+import javax.ws.rs.*;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import service.ParkingService;
+import util.ColorNotFoundException;
+import util.ParkingFullException;
+import util.RegistrationNotFoundException;
+
 import java.util.stream.Collectors;
 
+
+@Path("/")
 public class ParkingSlotManager {
 
-	MongoCollection client;
 	ArrayList<ParkingSlot> parkingSlots;
 	ArrayList<ParkingSlot> filledSlots;
 	MongoUtil mongoUtil= new MongoUtil();
 	RedisUtil redisUtil = new RedisUtil();
 	EsUtil esUtil = new EsUtil();
-	/**
-	 * Here we try to allocate the parking space for the vehicles
-	 */
+	Car car = new Car();
+	MongoCursor mongoCursor;
+	List<Map<String ,Object>> elasticSearchData = new ArrayList<>();
+	List<ParkingSlot> carData;
+	Object connection = ParkingService.connection;
+	String Adapter = ParkingService.Adapter;
+	int flag =0;
+
+
+
 	public ParkingSlotManager() throws UnknownHostException {
 		this.parkingSlots = new ArrayList<ParkingSlot>();
 		for(int i = 1; i <= 5; i++) {
@@ -54,34 +71,38 @@ public class ParkingSlotManager {
 		filledSlots = (ArrayList<ParkingSlot>) this.parkingSlots.stream().filter(u -> u.isFilled() == true).collect(Collectors.toList());
 		return filledSlots;
 	}
-	
-	/**
-	 * @param car Accepts the details of the car for the parking space
-	 * @throws ParkingFullException If the parking is full the exception is thrown
-	 */
-	public void assignCarParkingSpot(String Adapter, Car car,Object collection) throws ParkingFullException ,UnknownHostException{
+
+	@GET
+	@Path("/insert")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response assignCarParkingSpot( @QueryParam("color") String color,@QueryParam("regNumber") String reg_number) throws ParkingFullException {
+		System.out.println(color +""+reg_number);
+		car.setRegistrationNumber(reg_number);
+		car.setColor(color);
+		String str = null;
+		System.out.println(car.getColor() +""+ car.getRegistrationNumber());
 		if (Adapter.equalsIgnoreCase("memory")) {
 			ParkingSlot parkingSlot = this.getEmptyParkingSlot();
 			if (parkingSlot == null) {
 				throw new ParkingFullException("Parking is full");
 			}
-			//parkingSlot.setCar(car);
 			parkingSlot.setFilled(true);
 		}
 		if(Adapter.equalsIgnoreCase("mongodb")){
-			mongoUtil.assignCarSlot(car,collection);
+			str = mongoUtil.assignCarSlot(car,connection);
 		}
 		if(Adapter.equalsIgnoreCase("redis")){
-			redisUtil.assignCarSlot(car,collection);
+			str = redisUtil.assignCarSlot(car,connection);
 		}
 		if(Adapter.equalsIgnoreCase("elasticsearch"))
 		{
-			esUtil.assignCarSlot(car,collection);
+			str = esUtil.assignCarSlot(car,connection);
 		}
+		return Response.ok().build();
 	}
 
 
-	public void checkaccess(String Adapter,Object collection) throws UnknownHostException {
+	public void checkaccess(String Adapter,Object collection) {
 		switch (Adapter.toLowerCase()) {
 			case "mongodb":
 				mongoUtil.dataDocuments(collection);
@@ -94,13 +115,11 @@ public class ParkingSlotManager {
 				break;
 		}
 	}
-	/**
-	 * @param car accepts the details of the car to empty the space where the car was parked
-	 */
 
-
-
-	public void emptyParkingSpace(String Adapter, Car car,Object connection) {
+	@GET
+	@Path("/remove")
+	public Response emptyParkingSpace( @QueryParam("regNumber")String reg_number) {
+		car.setRegistrationNumber(reg_number);
 		ArrayList<ParkingSlot> filledSlots = getFilledParkingSlots();
 		if (Adapter.equalsIgnoreCase("memory")) {
 			for (ParkingSlot parkingSlot : filledSlots) {
@@ -113,22 +132,24 @@ public class ParkingSlotManager {
 
 		}
 		if(Adapter.equalsIgnoreCase("mongodb"))
-			mongoUtil.removeCar(car,connection);
-		if(Adapter.equalsIgnoreCase("redis"))
-			redisUtil.removeCar(car,connection);
-		if(Adapter.equalsIgnoreCase("elsticsearch"))
+			mongoCursor = mongoUtil.removeCar(car,connection);
+		if (Adapter.equalsIgnoreCase("redis")) {
+			System.out.println("Redis");
+			redisUtil.removeCar(car, connection);
+		}
+		if(Adapter.equalsIgnoreCase("elasticsearch"))
 			esUtil.removeCar(car,connection);
+
+		return Response.ok().build();
 	}
 
-
-
-
-	
-	/**
-	 * @return the registration number of the car
-	 * @throws RegistrationNotFoundException if the registration number is not found
-	 */
-	public List<String> registrationNumbersByColor(String Adapter, Car car,Object connection) throws RegistrationNotFoundException {
+	@Singleton
+	@GET
+	@Path("/searchByColor")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response registrationNumbersByColor( @QueryParam("color")String color) throws RegistrationNotFoundException {
+		car.setColor(color);
+		flag =0;
 		List<String> registrationNumbers = null;
 		if(Adapter.equalsIgnoreCase("memory")){
 			ArrayList<ParkingSlot> filledSlots = getFilledParkingSlots();
@@ -142,13 +163,21 @@ public class ParkingSlotManager {
 		}
 		else if(Adapter.equalsIgnoreCase("mongodb"))
 		{
-			mongoUtil.getData(car,"color",connection);
+
+		carData = mongoUtil.getData(car,"color",connection);
+
 		}
-		else if(Adapter.equalsIgnoreCase("elasticsearch"))
-			esUtil.getData(car,"color",connection);
-		else if(Adapter.equalsIgnoreCase("redis"))
-			redisUtil.getData(car,"color",connection);
-		return null;
+		else if(Adapter.equalsIgnoreCase("elasticsearch")){
+			elasticSearchData = esUtil.getData(car,"color",connection);
+			flag =1;
+		}
+		else if(Adapter.equalsIgnoreCase("redis")) {
+			carData = redisUtil.getData(car, "color", connection);
+		}
+		if(flag == 1)
+			return Response.ok(elasticSearchData).build();
+		else
+			return Response.ok(carData).build();
 	}
 	
 	/**
@@ -156,7 +185,13 @@ public class ParkingSlotManager {
 	 * @return floor and slot where the car is parked
 	 * @throws RegistrationNotFoundException if the car is not registered
 	 */
-	public String getSlotOfCarByRegistration(String Adapter, Car car,Object connection) throws RegistrationNotFoundException {
+	//@Singleton
+	@GET
+	@Path("/searchByRegistration")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response getSlotOfCarByRegistration(@QueryParam("regNumber") String reg_number) throws RegistrationNotFoundException {
+		car.setRegistrationNumber(reg_number);
+		flag =0;
 		if (Adapter.equalsIgnoreCase("memory")) {
 			ArrayList<ParkingSlot> filledSlots = getFilledParkingSlots();
 			ParkingSlot result = filledSlots.stream()
@@ -168,27 +203,37 @@ public class ParkingSlotManager {
 		}
 		if(Adapter.equalsIgnoreCase("mongodb"))
 		{
-			mongoUtil.getData(car,"registernumber",connection);
+			carData = mongoUtil.getData(car,"registernumber",connection);
+
 		}
-		if (Adapter.equalsIgnoreCase("elasticsearch"))
-			esUtil.getData(car,"registernumber",connection);
-		if(Adapter.equalsIgnoreCase("redis"))
-			redisUtil.getData(car,"registernumber",connection);
-		return null;
+		if (Adapter.equalsIgnoreCase("elasticsearch")) {
+			elasticSearchData = esUtil.getData(car, "registernumber", connection);
+			flag =1;
+
+		}
+		if(Adapter.equalsIgnoreCase("redis")) {
+			carData = redisUtil.getData(car, "registernumber", connection);
+		}
+		if(flag == 1)
+			return Response.ok(elasticSearchData).build();
+		else
+			return Response.ok(carData).build();
 	}
 	
 	/**
-
 	 * @return the floor and slot of the car where it is parked
 	 * @throws ColorNotFoundException if the car is not found of the specific color
 	 */
 
 
-
-
-	public List<String> getSlotOfCarByColor(String Adapter, Car car,Object collection) throws ColorNotFoundException {
+	@GET
+	@Path("searchForSlotByColor")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response getSlotOfCarByColor(@QueryParam("color")String color) throws ColorNotFoundException {
 		List<String> parkingSlots = null;
+		car.setColor(color);
 		ArrayList<ParkingSlot> filledSlots = null;
+		flag =0;
 		if (Adapter.equalsIgnoreCase("memory")) {
 			filledSlots = getFilledParkingSlots();
 			parkingSlots = filledSlots.stream()
@@ -200,15 +245,22 @@ public class ParkingSlotManager {
 			System.out.println(parkingSlots);
 		}
 		if(Adapter.equalsIgnoreCase("mongodb"))
-			mongoUtil.getData(car,"color",collection);
-		if (Adapter.equalsIgnoreCase("elasticsearch"))
-			esUtil.getData(car,"color",collection);
-		if(Adapter.equalsIgnoreCase("redis"))
-			redisUtil.getData(car,"color",collection);
-		return null;
-	}
+		{
+			carData = mongoUtil.getData(car,"color",connection);
 
+		}
+		if (Adapter.equalsIgnoreCase("elasticsearch")) {
+			elasticSearchData = esUtil.getData(car, "color", connection);
+			flag =1;
 
+		}
+		if(Adapter.equalsIgnoreCase("redis")) {
+			carData = redisUtil.getData(car, "color", connection);
+		}
 
-
+		System.out.println(carData);
+		if(flag == 1)
+			return Response.ok(elasticSearchData).build();
+		else
+			return Response.ok(carData).build();	}
 }

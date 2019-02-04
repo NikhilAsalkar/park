@@ -1,4 +1,4 @@
-package util;
+package jdbi;
 
 import bean.Car;
 import org.elasticsearch.action.search.*;
@@ -8,6 +8,7 @@ import org.elasticsearch.index.query.*;
 import org.elasticsearch.index.reindex.*;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.sort.SortOrder;
+import util.AddDocuments;
 
 import java.util.ArrayList;
 import java.util.List;

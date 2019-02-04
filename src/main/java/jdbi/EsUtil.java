@@ -1,12 +1,15 @@
-package util;
+package jdbi;
 
 import bean.*;
 
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.search.SearchHit;
+import util.AddDocuments;
+import util.ParkingFullException;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -37,7 +40,7 @@ public class EsUtil {
         }
 
     }
-    public void assignCarSlot(Car car,Object connection)
+    public String assignCarSlot(Car car,Object connection)
     {
         boolean tru = true;
         client = (TransportClient)connection;
@@ -78,6 +81,7 @@ public class EsUtil {
                "\"isfilled\":"+tru+
                "}";
         esAccess.update(connection,json,id);
+        return "";
 
     }
 
@@ -87,21 +91,23 @@ public class EsUtil {
 
     }
 
-    public void getData(Car car,String finder,Object collection) {
+    public List<Map<String, Object>> getData(Car car, String finder, Object collection) {
+        Map< String,Object> map =new HashMap<>();
         find = adddocuments.datatoget(car, finder);
         esData = esAccess.find(find, collection);
         if (esData == null)
             System.out.println("No such entry");
         else {
-            for (Map<String, Object> map : esData) {
+            //map = (Map<String, Object>) esData;
+          /*  for (Map<String, Object> map : esData) {
                 for (Map.Entry<String, Object> entry : map.entrySet()) {
                     String key = entry.getKey();
                     Object value = entry.getValue();
                     System.out.print(key + " : " + value + " , ");
                 }
                 System.out.println();
-            }
-        }
+            }*/
+        }return esData;
     }
 
 }

@@ -1,17 +1,17 @@
 package bean;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.logging.log4j.util.SystemPropertiesPropertySource;
-import org.bson.types.ObjectId;
-import org.jongo.marshall.jackson.oid.MongoObjectId;
 
 /**
  * @author zoro
  *
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ParkingSlot {
 	@JsonProperty("_id")
-	@MongoObjectId
 	private String id;
 	@JsonProperty("color")
 	public String color;
@@ -24,23 +24,38 @@ public class ParkingSlot {
 	@JsonProperty("isfilled")
 	public boolean isFilled;
 
-	public int getParkingLevel() {
+	public ParkingSlot(){
+
+	}
+
+	public ParkingSlot(String id, String color, String regNumber, int parkingLevel, int parkingSlot, boolean isFilled) {
+		this.id = id;
+		this.color = color;
+		this.regNumber = regNumber;
+		this.parkingLevel = parkingLevel;
+		this.parkingSlot = parkingSlot;
+		this.isFilled = isFilled;
+	}
+
+	public float getParkingLevel() {
 		return parkingLevel;
+	}
+
+	public float getParkingSlot() {
+		return parkingSlot;
 	}
 
 	public void setParkingLevel(int parkingLevel) {
 		this.parkingLevel = parkingLevel;
 	}
 
-	public int getParkingSlot() {
-		return parkingSlot;
-	}
+
 
 	public void setParkingSlot(int parkingSlot) {
 		this.parkingSlot = parkingSlot;
 	}
 
-	public String getId() {
+	public String  getId() {
 		return id;
 	}
 

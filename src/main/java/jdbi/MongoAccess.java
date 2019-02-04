@@ -1,4 +1,4 @@
-package util;
+package jdbi;
 
 
 import bean.ParkingSlot;
@@ -6,6 +6,8 @@ import bean.ParkingSlot;
 import org.jongo.MongoCollection;
 
 import org.jongo.MongoCursor;
+
+import java.util.ArrayList;
 
 public class MongoAccess {
 
@@ -26,13 +28,15 @@ public class MongoAccess {
 
     public MongoCursor<ParkingSlot> fetchData(String[] find,Object connection)
     {
+        MongoCursor<ParkingSlot> source;
         collection = (MongoCollection)connection;
         if(find == null)
             fin = "";
         else
             fin = "{"+find[0]+":'" + find[1] + "'}";
-        MongoCursor<ParkingSlot> source =
-                collection.find(fin).as(ParkingSlot.class);
+           source = collection.find(fin).as(ParkingSlot.class);
+
+
         return source;
 
     }
