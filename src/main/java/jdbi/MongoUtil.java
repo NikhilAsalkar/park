@@ -12,18 +12,20 @@ import java.util.*;
 
 public class MongoUtil {
     ArrayList<ParkingSlot> arrayList;
+    List list;
     AddDocuments adddocuments = new AddDocuments();
     MongoAccess mongoAccess = new MongoAccess();
     MongoCollection client ;
     BasicDBObject newdocument = new BasicDBObject();
     String find[];
     HashMap<String,String > hash = new HashMap<>();
-
+    int flag =0;
 
     public void dataDocuments(Object connection){
         client = (MongoCollection) connection;
         String[] fin =null;
-        MongoCursor<ParkingSlot> find = mongoAccess.fetchData(fin,connection);
+        String[] search =null;
+        MongoCursor<ParkingSlot> find = mongoAccess.fetchData(fin,connection,search);
         int count = find.count();
         if(count == 0)
         {
@@ -39,10 +41,9 @@ public class MongoUtil {
     }
 
 
-    public String assignCarSlot(Car car,Object connection) {
+    public List assignCarSlot(Car car,Object connection) {
 
         ParkingSlot parkingSlot = mongoAccess.fetchOneDocument(connection);
-
                 if(parkingSlot == null)
                     throw new ParkingFullException("Parking is Full");
                 else
@@ -52,14 +53,21 @@ public class MongoUtil {
                     newdocument.put("isfilled","true");
                     String id = parkingSlot.getId();
                     mongoAccess.update(newdocument,id);
+
+                    list.add(parkingSlot.getId());
+                    list.add(parkingSlot.getParkingLevel());
+                    list.add(parkingSlot.getParkingSlot());
+
                 }
-                return "";
+
+                return list;
     }
 
-    public MongoCursor removeCar(Car car, Object connection) {
-
+    public String removeCar(Car car, Object connection) {
+        flag=0;
         find=adddocuments.datatoget(car,"registernumber");
-        MongoCursor<ParkingSlot> source = mongoAccess.fetchData(find,connection);
+        String[] search=null;
+        MongoCursor<ParkingSlot> source = mongoAccess.fetchData(find,connection,search);
         if(source == null)
             System.out.println("No record found");
         else {
@@ -68,30 +76,48 @@ public class MongoUtil {
                 newdocument.put("reg_number", "null");
                 newdocument.put("isfilled", false);
                 mongoAccess.update(newdocument, pa.getId());
+                flag =1;
             }
         }
-        return null;
+        if(flag == 0)
+            return "null";
+        else
+            return "Removed";
     }
 
 
-    public List<ParkingSlot> getData(Car car, String finder, Object connection) {
+    public List<ParkingSlot> getData(Car car, String finder, Object connection,String[] search) {
         find=adddocuments.datatoget(car,finder);
         List<ParkingSlot> arrayList = new ArrayList();
-        MongoCursor<ParkingSlot> source1 = mongoAccess.fetchData(find,connection);
+        MongoCursor<ParkingSlot> source1 = mongoAccess.fetchData(find,connection,search);
 
-       /* if(source1 == null)
-            System.out.println("No record found");
-        else
+      /*  else
             for(ParkingSlot pa : source1)
                 System.out.println(pa.toString());
         */
 
 
-       for ( ParkingSlot pa: source1) {
-           arrayList.add(pa);
-       }
+           for (ParkingSlot pa : source1) {
+               arrayList.add(pa);
+           }
+
        return arrayList;
     }
+    public List<ParkingSlot> ifCarPresent(Car car, Object connection)
+    {
+        String find = "{reg_number:'"+car.getRegistrationNumber()+"'}";
+        List<ParkingSlot> arrayList = new ArrayList();
 
+        MongoCursor<ParkingSlot> source1 = mongoAccess.findCar(connection,find);
+        if(source1 == null)
+            return arrayList= null;
+        else
+        {
+            for(ParkingSlot pa:source1)
+                arrayList.add(pa);
+            return arrayList;
+        }
+
+    }
 
 }

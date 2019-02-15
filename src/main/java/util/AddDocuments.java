@@ -4,17 +4,15 @@ import bean.ParkingSlot;
 
 import java.util.ArrayList;
 import bean.*;
-import org.bson.types.ObjectId;
 
 public class AddDocuments {
 
     ArrayList<ParkingSlot>arrayList;
-    Car car;
     String string[];
     String id;
    public  ArrayList<ParkingSlot> addDocuments()
     {
-        this.arrayList = new ArrayList<ParkingSlot>();
+        this.arrayList = new ArrayList<>();
 
         for(int i = 1; i <= 5; i++) {
             for(int j = 1; j<= 20; j++) {
@@ -67,4 +65,16 @@ public class AddDocuments {
                 "}";
         return json;
     }
+
+    public Object SendMessage(boolean success,String error,Object payload)
+    {
+        Representation representation = new Representation();
+
+        representation.setSuccess(success);
+        representation.setError(error);
+        representation.setPayload(payload);
+        return representation;
+    }
+
+
 }

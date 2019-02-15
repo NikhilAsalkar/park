@@ -5,6 +5,7 @@ import java.util.*;
 public class RedisAccess {
     Jedis jedis;
     Set hash;
+    List<String> data;
     public Set getkey(String key,Object connection){
         jedis = (Jedis) connection;
         hash = jedis.keys(key);
@@ -44,7 +45,7 @@ public class RedisAccess {
         return data;
     }
 
-    public String getValue(String key,String finder,Object connection)
+    public String getValue(String key, String finder, Object connection)
     {
         jedis = (Jedis)connection;
         String data = jedis.hget(key,finder);
@@ -55,6 +56,17 @@ public class RedisAccess {
     {
         jedis = (Jedis)connection;
         jedis.del(key);
+    }
+
+    public List<String> getMValues(String key,Object connection,String[] search)
+    {
+        jedis = (Jedis)connection;
+        if(search[1] ==null)
+           data = jedis.hmget(key,search[0]);
+        else
+            data = jedis.hmget(key,search[0],search[1]);
+        return data;
+
     }
 }
 

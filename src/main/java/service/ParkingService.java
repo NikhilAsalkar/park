@@ -1,6 +1,7 @@
 package service;
 
 import db.ConnectionHandling;
+import db.YmlConfiguration;
 import io.dropwizard.Application;
 import io.dropwizard.Configuration;
 import io.dropwizard.setup.Environment;
@@ -10,7 +11,7 @@ import resource.ParkingSlotManager;
 import java.net.UnknownHostException;
 
 
-public class ParkingService extends Application<Configuration> {
+public class ParkingService extends Application<YmlConfiguration> {
     public static String Adapter;
     public static Object connection;
 
@@ -20,20 +21,19 @@ public class ParkingService extends Application<Configuration> {
     }
 
 
-    public void init(Configuration configuration) throws UnknownHostException
-    {    ParkingSlotManager parkingSlotManager = new ParkingSlotManager();
-
+    public void init(YmlConfiguration configuration) throws UnknownHostException
+    {
         GetPropertyValues properties = new GetPropertyValues();
         Adapter = properties.getPropValues();
         connection = new ConnectionHandling().getConnection(Adapter);
-        parkingSlotManager.checkaccess(Adapter,connection);
     }
 
     @Override
-    public void run(Configuration configuration, Environment environment) throws Exception {
+    public void run(YmlConfiguration configuration, Environment environment) throws Exception {
         init(configuration);
-        ParkingSlotManager parkingSlotManager = new ParkingSlotManager();
-        environment.jersey().register(parkingSlotManager);
 
+        ParkingSlotManager parkingSlotManager = new ParkingSlotManager();
+        parkingSlotManager.checkaccess(Adapter,connection);
+        environment.jersey().register(parkingSlotManager);
     }
 }

@@ -1,8 +1,16 @@
 package bean;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class Car {
-	String color;
-	String registrationNumber;
+	@JsonProperty("color")
+	public String color;
+
+
+	@JsonProperty("reg_number")
+	public String registrationNumber;
+
+
 	public String getColor() {
 		return color;
 	}
@@ -12,6 +20,7 @@ public class Car {
 	}
 
 	public String getRegistrationNumber() {
+
 		return registrationNumber;
 	}
 	public void setRegistrationNumber(String registrationNumber) {
@@ -20,29 +29,6 @@ public class Car {
 
 	@Override
 	public String toString() {
-		return "bean.Car [color=" + color + ", registrationNumber=" + registrationNumber + "]";
-	}
-	
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		Car other = (Car) obj;
-		if (color == null) {
-			if (other.color != null)
-				return false;
-		} else if (!color.equals(other.color))
-			return false;
-		if (registrationNumber == null) {
-			if (other.registrationNumber != null)
-				return false;
-		} else if (!registrationNumber.equals(other.registrationNumber))
-			return false;
-		return true;
+		return "Car [color=" + color + ", registrationNumber=" + registrationNumber + "]";
 	}
 }
